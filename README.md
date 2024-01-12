@@ -4,7 +4,9 @@
 minikube start --cpus 2 --memory 4g --driver docker --profile polar
 
 minikube start --cpus 2 --memory 4g --driver docker --profile polar
+
 minikube addons enable ingress --profile polar
+
 kubectl get all -n ingress-nginx
 
 minikube image load catalog-service --profile polar
