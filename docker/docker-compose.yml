@@ -2,126 +2,31 @@ version: "3.8"
 services:
 
   # Applications
-  config-service:
-    image: "config-service"
-    container_name: "config-service"
-    platform: linux/amd64
-    ports:
-      - 8888:8888
-      - 9888:9888
-    environment:
-      # Buildpacks environment variable to configure the number of threads in memory calculation
-      - BPL_JVM_THREAD_COUNT=50
-      # Buildpacks environment variable to enable debug through a socket on port 9888
-      - BPL_DEBUG_ENABLED=true
-      - BPL_DEBUG_PORT=9888
-      - SPRING_PROFILES_ACTIVE=testdata
-      
+
   catalog-service:
-    restart: on-failure
     depends_on:
-      - config-service
       - polar-postgres
-    image: "catalog-service"
+    image: "ghcr.io/codingkiddo/catalog-service:latest"
     container_name: "catalog-service"
-    platform: linux/amd64
     ports:
-      - 9002:9002    
+      - 9001:9001
+      - 8001:8001
     environment:
       # Buildpacks environment variable to configure the number of threads in memory calculation
       - BPL_JVM_THREAD_COUNT=50
-      - WAIT_HOSTS=config-service:8888
+      # Buildpacks environment variable to enable debug through a socket on port 8001
+      - BPL_DEBUG_ENABLED=true
+      - BPL_DEBUG_PORT=8001
       - SPRING_CLOUD_CONFIG_URI=http://config-service:8888
-      - SPRING_DATASOURCE_USERNAME=compose-postgres
-      - SPRING_DATASOURCE_PASSWORD=compose-postgres
       - SPRING_DATASOURCE_URL=jdbc:postgresql://polar-postgres:5432/polardb_catalog
-      - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_PROFILES_ACTIVE=testdata
   
-  order-service:
-    depends_on:
-      - config-service
-      - polar-postgres
-    image: "order-service"
-    container_name: "order-service"
-    ports:
-      - 9003:9003
-      - 8003:8003
-    environment:
-      # Buildpacks environment variable to enable debug through a socket on port 8002
-      - BPL_DEBUG_ENABLED=true
-      - BPL_DEBUG_PORT=8003
-      - POLAR_CATALOG_SERVICE_URI=http://catalog-service:9002
-      - BPL_JVM_THREAD_COUNT=50
-      - WAIT_HOSTS=config-service:8888
-      - SPRING_CLOUD_CONFIG_URI=http://config-service:8888
-      - SPRING_DATASOURCE_USERNAME=compose-postgres
-      - SPRING_DATASOURCE_PASSWORD=compose-postgres
-      - SPRING_R2DBC_URL=r2dbc:postgresql://polar-postgres:5432/polardb_order
-      - SPRING_FLYWAY_URL=jdbc:postgresql://polar-postgres:5432/polardb_order
-  
-  
-  edge-service:
-    depends_on:
-      - polar-redis
-    image: "edge-service"
-    container_name: "edge-service"
-    ports:
-      - 9000:9000
-      - 8000:8000
-    environment:
-      # Buildpacks environment variable to enable debug through a socket on port 8000
-      - BPL_DEBUG_ENABLED=true
-      - BPL_DEBUG_PORT=8000
-      - CATALOG_SERVICE_URL=http://catalog-service:9002
-      - ORDER_SERVICE_URL=http://order-service:9003
-      - SPRING_CLOUD_CONFIG_URI=http://config-service:8888
-      - SPRING_REDIS_HOST=polar-redis
-            
-  # Backing Services
-      
   polar-postgres:
-    image: postgres:14.4
-    container_name: polar-postgres
+    image: "postgres:14.4"
+    container_name: "polar-postgres"
     ports:
       - 5432:5432
     environment:
-      - POSTGRES_USER=compose-postgres
-      - POSTGRES_PASSWORD=compose-postgres
-    volumes: 
-      - ./postgresql/init.sql:/docker-entrypoint-initdb.d/init.sql
-  
-  polar-ui:
-   image: "ghcr.io/polarbookshop/polar-ui:v1"
-   container_name: "polar-ui"
-   platform: linux/amd64
-   ports:
-     - 9004:9004
-   environment:
-     - PORT=9004
-     
-  polar-redis:
-    image: "redis:7.0"
-    container_name: "polar-redis"
-    ports:
-      - 6379:6379
-      
-  polar-keycloak:
-    image: quay.io/keycloak/keycloak:23.0.5
-    container_name: "polar-keycloak"
-    command: start-dev --import-realm
-    volumes:
-       - ./keycloak:/opt/keycloak/data/import
-    environment:
-      KEYCLOAK_ADMIN: user
-      KEYCLOAK_ADMIN_PASSWORD: password
-    ports:
-      - "8080:8080"
-          
-  polar-rabbitmq: 
-     image: rabbitmq:3.10-management
-     container_name: polar-rabbitmq
-     ports:
-      - 5672:5672
-      - 15672:15672
-     volumes:
-      - ./rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=polardb_catalog
