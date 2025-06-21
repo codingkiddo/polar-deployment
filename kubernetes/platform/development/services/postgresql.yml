@@ -58,7 +58,7 @@ metadata:
   labels:
     db: polar-postgres
 spec:
-  type: ClusterIP
+  type: NodePort
   selector:
     db: polar-postgres
   ports:
